@@ -979,21 +979,19 @@ MIT License — see [LICENSE](LICENSE) for full terms.
 
 ---
 
-## 👥 Team
+## 👥 other
 
 | Name | Role |
 |---|---|
-| [Your Name] | Lead Developer & Architecture |
-| [Team Member] | Frontend & UI/UX |
-| [Team Member] | Backend & DevOps |
-| [Team Member] | ML & Analytics |
+| [vedant patel] | Lead Developer & Architecture |
+
 
 ---
 
 ## 📞 Contact
 
-- 📧 `support@parkqr.io`
-- 📖 [docs.parkqr.io](#)
+- 📧 `vedantpatelxy12@gmail.com`
+- 💬 Discussions: GitHub Discussions
 
 ---
 
