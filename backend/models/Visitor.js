@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Visitor Schema Definition
 const visitorSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -19,8 +20,8 @@ const visitorSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['coming', 'inside', 'exited'],
-        default: 'coming'
+        enum: ["coming", "inside", "exited"],
+        default: "coming"
     },
     isPriority: {
         type: Boolean,
@@ -36,7 +37,8 @@ const visitorSchema = new mongoose.Schema({
         type: String
     }
 }, {
-    timestamps: true
+    timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
+// Export the model
 module.exports = mongoose.model('Visitor', visitorSchema);
