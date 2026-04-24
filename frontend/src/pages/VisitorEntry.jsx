@@ -35,24 +35,25 @@ const VisitorEntry = () => {
   };
 
   return (
-    <div className="container" style={{ margin: '0' }}>
-      <div className="glass card">
-        <h2>Visitor Registration</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '30px' }}>
-          Real-time encrypted pass generation.
+    <div className="container" style={{ maxWidth: '600px', margin: '0 0' }}>
+      <div className="card">
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '8px' }}>Visitor Registration</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '0.875rem' }}>
+          Assign access credentials and generate visual entry tokens.
         </p>
 
         {error && (
-          <div className="glass" style={{ 
+          <div style={{ 
             padding: '12px', 
-            background: 'rgba(244, 63, 94, 0.1)', 
+            background: '#fef2f2', 
             color: 'var(--error)', 
             borderRadius: '8px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            border: '1px solid rgba(244, 63, 94, 0.2)'
+            marginBottom: '24px',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            border: '1px solid #fee2e2'
           }}>
-            {error}
+            ⚠️ {error}
           </div>
         )}
 
@@ -66,6 +67,7 @@ const VisitorEntry = () => {
       />
     </div>
   );
+
 
 
 };

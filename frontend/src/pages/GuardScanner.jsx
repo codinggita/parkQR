@@ -33,68 +33,74 @@ const GuardScanner = () => {
   };
 
   return (
-    <div className="container" style={{ margin: '0' }}>
-      <div className="glass card">
-        <h2>QR Surveillance</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Simulated scanning interface for entry verification.
+    <div className="container" style={{ maxWidth: '500px', margin: '0 0' }}>
+      <div className="card">
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '8px' }}>Security Surveillance</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.875rem' }}>
+          Real-time entry verification terminal.
         </p>
 
-        <div className="form-field">
-          <label>Encrypted QR Payload</label>
+        <div className="form-group" style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '2px solid #e2e8f0' }}>
+          <label className="form-label" style={{ marginBottom: '12px', display: 'block' }}>Simulated Optical Input</label>
           <textarea
             value={scannedData}
             onChange={(e) => setScannedData(e.target.value)}
             className="form-input"
-            placeholder='Paste scannable data here...'
-            style={{ height: '100px', fontFamily: 'monospace', fontSize: '0.75rem' }}
+            placeholder='Ready for QR payload...'
+            style={{ height: '120px', background: 'white', fontFamily: 'monospace' }}
           />
+          <div style={{ marginTop: '12px', height: '4px', background: 'var(--primary)', borderRadius: '2px', opacity: 0.3 }}></div>
         </div>
 
         <button 
             onClick={handleVerify} 
-            className="btn-primary"
+            className="btn btn-primary"
             disabled={loading || !scannedData}
-            style={{ marginTop: '10px' }}
+            style={{ width: '100%', marginTop: '24px' }}
         >
-          {loading ? 'Decrypting...' : 'Verify Access'}
+          {loading ? 'Analyzing Token...' : 'Verify Entry Credentials'}
         </button>
 
         {error && (
-          <div className="glass" style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            background: 'rgba(244, 63, 94, 0.1)', 
+          <div style={{ 
+            marginTop: '24px', 
+            padding: '20px', 
+            background: '#fef2f2', 
             color: 'var(--error)', 
             borderRadius: '12px', 
-            textAlign: 'center',
-            border: '1px solid rgba(244, 63, 94, 0.2)'
+            border: '1px solid #fee2e2',
+            textAlign: 'center'
           }}>
-            <strong>DENIED:</strong> {error}
+            <h4 style={{ margin: '0 0 4px 0' }}>🚫 ACCESS DENIED</h4>
+            <div style={{ fontSize: '0.875rem' }}>Reason: {error}</div>
           </div>
         )}
 
         {result && (
-          <div className="glass" style={{ 
-            marginTop: '20px', 
-            padding: '20px', 
-            background: 'rgba(16, 185, 129, 0.1)', 
-            color: 'var(--success)', 
+          <div style={{ 
+            marginTop: '24px', 
+            padding: '24px', 
+            background: '#ecfdf5', 
+            color: '#065f46', 
             borderRadius: '12px', 
-            border: '1px solid rgba(16, 185, 129, 0.2)'
+            border: '1px solid #d1fae5'
           }}>
-            <h3 style={{ margin: '0 0 10px 0', textAlign: 'center' }}>ACCESS GRANTED</h3>
-            <div style={{ color: 'var(--text-main)', fontSize: '0.9rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Visitor:</span>
-                <span>{result.visitor.name}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+               <div style={{ width: 12, height: 12, background: 'var(--success)', borderRadius: '50%' }}></div>
+               <h4 style={{ margin: 0, fontWeight: 800 }}>✅ VERIFIED: ENTRY ALLOWED</h4>
+            </div>
+            
+            <div style={{ fontSize: '0.875rem', color: '#064e3b' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid rgba(6, 95, 70, 0.1)', paddingBottom: '8px' }}>
+                <span>Visitor</span>
+                <strong>{result.visitor.name}</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Destination:</span>
-                <span>Flat {result.visitor.flat}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid rgba(6, 95, 70, 0.1)', paddingBottom: '8px' }}>
+                <span>Authorized Unit</span>
+                <strong>{result.visitor.flat}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Entry Logged:</span>
+                <span>Log Timestamp</span>
                 <span>{new Date(result.visitor.entryTime).toLocaleTimeString()}</span>
               </div>
             </div>
@@ -103,6 +109,7 @@ const GuardScanner = () => {
       </div>
     </div>
   );
+
 
 };
 
