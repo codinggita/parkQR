@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const NotificationList = () => {
+    const { user } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchNotifications = async () => {
+        if (!user?.token || user.role !== 'admin') return;
         try {
-            const response = await fetch('http://localhost:5000/api/notifications');
+            const response = await fetch('http://localhost:5000/api/notifications', {
+                headers: { 'Authorization': `Bearer ${user.token}` }
+            });
             const data = await response.json();
             if (data.success) {
                 setNotifications(data.data);
@@ -19,9 +24,11 @@ const NotificationList = () => {
     };
 
     const markAsRead = async (id) => {
+        if (!user?.token) return;
         try {
             const response = await fetch(`http://localhost:5000/api/notifications/${id}`, {
-                method: 'PUT'
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${user.token}` }
             });
             if (response.ok) {
                 setNotifications(notifications.map(n => 

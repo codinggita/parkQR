@@ -9,7 +9,11 @@ const mockStore = {
         { _id: 'mock2', slotId: 'A2', slotType: 'Guest', isOccupied: false, timeLimit: 60, duration: 0, isOverstayed: false },
         { _id: 'mock3', slotId: 'VIP1', slotType: 'VIP', isOccupied: false, timeLimit: 120, duration: 0, isOverstayed: false }
     ],
-    notifications: []
+    notifications: [],
+    users: [
+        { _id: 'm-admin', name: 'System Admin', email: 'admin@parksmart.com', password: 'password123', role: 'admin' },
+        { _id: 'm-guard', name: 'Main Guard', email: 'guard1@parksmart.com', password: 'guardpassword', role: 'guard' }
+    ]
 };
 
 /**

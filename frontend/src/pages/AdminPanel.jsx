@@ -99,8 +99,46 @@ const AdminPanel = () => {
         {activeTab === 'analytics' && <AnalyticsDashboard />}
         
         {activeTab === 'logs' && (
-            <div className="glass" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                Advanced Log Analysis coming in Phase 14...
+            <div className="tab-content animate-in">
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '32px' }}>
+                    {/* Security Feed */}
+                    <div className="glass" style={{ padding: '32px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Master Security Logs</h2>
+                            <button className="btn" style={{ fontSize: '0.7rem' }}>Download Log Archive</button>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                        <th style={{ padding: '12px' }}>EVENT TYPE</th>
+                                        <th style={{ padding: '12px' }}>SOURCE</th>
+                                        <th style={{ padding: '12px' }}>DESCRIPTION</th>
+                                        <th style={{ padding: '12px' }}>TIMESTAMP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <LogEntry type="ENTRY" source="GATE-A" msg="Guest Visit Registered: John Doe" time="10:22 AM" />
+                                    <LogEntry type="ANOMALY" source="GATE-B" msg="Potential Piggybacking Detected: MH-01-V-888" time="10:45 AM" isWarning />
+                                    <LogEntry type="OVERSTAY" source="SLOT-C4" msg="Security Alert: Slot C4 exceeded 4h limit" time="11:15 AM" isError />
+                                    <LogEntry type="EXIT" source="MAIN-E" msg="VIP Exit Verified" time="11:30 AM" />
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* AI Anomaly Monitor */}
+                    <div className="glass" style={{ padding: '24px' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '20px' }}>AI Anomalies</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <AnomalyCard title="Double Scan" desc="Multiple access requests for Token X-99" count={2} />
+                            <AnomalyCard title="Rapid Exit" desc="Vehicle exited < 120s from entry" count={5} />
+                            <div style={{ padding: '16px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>Scan Accuracy: 99.4%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         )}
       </div>
@@ -133,7 +171,8 @@ const AdminPanel = () => {
         .toast {
             padding: 16px 24px;
             border-radius: 12px;
-            background: white;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             border-left: 6px solid var(--primary);
             font-weight: 700;
@@ -145,6 +184,31 @@ const AdminPanel = () => {
     </div>
   );
 };
+
+const LogEntry = ({ type, source, msg, time, isWarning, isError }) => (
+    <tr style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+        <td style={{ padding: '12px' }}>
+            <span style={{ 
+                padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800,
+                background: isError ? 'var(--error)' : (isWarning ? '#F59E0B' : 'var(--primary)'),
+                color: 'white'
+            }}>{type}</span>
+        </td>
+        <td style={{ padding: '12px', fontWeight: 700 }}>{source}</td>
+        <td style={{ padding: '12px' }}>{msg}</td>
+        <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{time}</td>
+    </tr>
+);
+
+const AnomalyCard = ({ title, desc, count }) => (
+    <div className="glass" style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{title}</span>
+            <span style={{ color: 'var(--error)', fontWeight: 800, fontSize: '0.85rem' }}>{count}</span>
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{desc}</p>
+    </div>
+);
 
 const Tab = ({ title, icon, active, onClick }) => (
     <div className={`tab-btn ${active ? 'active' : ''}`} onClick={onClick}>

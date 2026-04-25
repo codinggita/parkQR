@@ -1,23 +1,30 @@
 const mongoose = require('mongoose');
 const ParkingSlot = require('./models/ParkingSlot');
+const User = require('./models/User');
 require('dotenv').config();
+
+const users = [
+    { name: 'System Admin', email: 'admin@parksmart.com', password: 'password123', role: 'admin' },
+    { name: 'Main Guard', email: 'guard1@parksmart.com', password: 'guardpassword', role: 'guard' }
+];
 
 const slots = [
     { slotId: 'A1', slotType: 'Guest', timeLimit: 60 },
     { slotId: 'A2', slotType: 'Guest', timeLimit: 60 },
-    { slotId: 'A3', slotType: 'Guest', timeLimit: 60 },
     { slotId: 'B1', slotType: 'VIP', timeLimit: 120 },
-    { slotId: 'B2', slotType: 'VIP', timeLimit: 120 },
     { slotId: 'C1', slotType: 'Reserved', timeLimit: 480 },
-    { slotId: 'C2', slotType: 'Reserved', timeLimit: 480 },
 ];
 
-const seedSlots = async () => {
+const seedData = async () => {
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/smart_parking'); // Consistent with backend/config/db.js
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smart_parking');
         await ParkingSlot.deleteMany();
+        await User.deleteMany();
+        
         await ParkingSlot.insertMany(slots);
-        console.log('✅ Parking slots initialized');
+        await User.create(users); // Using create to trigger pre-save hashing
+        
+        console.log('✅ Production-Level Data Initialized (Users & Slots)');
         process.exit();
     } catch (err) {
         console.error(err);
@@ -25,4 +32,4 @@ const seedSlots = async () => {
     }
 };
 
-seedSlots();
+seedData();
