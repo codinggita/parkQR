@@ -11,6 +11,8 @@ const mockStore = {
     ],
     notifications: [],
     users: [
+        { _id: 'm-dev', name: 'Vedant Patel', email: 'vedantpatelxy12@gmail.com', password: 'password123', role: 'admin' },
+        { _id: 'm-sahil', name: 'Sahil', email: 'sahil@gmail.com', password: 'password123', role: 'admin' },
         { _id: 'm-admin', name: 'System Admin', email: 'admin@parksmart.com', password: 'password123', role: 'admin' },
         { _id: 'm-guard', name: 'Main Guard', email: 'guard1@parksmart.com', password: 'guardpassword', role: 'guard' }
     ]

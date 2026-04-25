@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { User, Phone, Car, Home, Zap } from 'lucide-react';
 
 const VisitorForm = ({ onSubmit, loading }) => {
   const [formData, setFormData] = useState({
@@ -6,118 +7,106 @@ const VisitorForm = ({ onSubmit, loading }) => {
     phone: '',
     vehicle: '',
     flatNumber: '',
-    isPriority: false
+    isPriority: false,
   });
-
-  const [errors, setErrors] = useState({});
-
-  const validate = () => {
-    let newErrors = {};
-    if (!formData.name) newErrors.name = 'Name is required';
-    if (!formData.phone) {
-      newErrors.phone = 'Phone is required';
-    } else if (!/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'Enter a valid 10-digit phone number';
-    }
-    if (!formData.flatNumber) newErrors.flatNumber = 'Flat number is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmit(formData);
-    }
+    onSubmit(formData);
   };
 
+  const inputClass = "w-full bg-slate-900/40 border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-600 font-medium";
+
   return (
-    <form className="ai-form" onSubmit={handleSubmit}>
-      <div className="form-grid" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '20px'
-      }}>
-        <div className="form-field">
-          <label>Full Name</label>
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label icon={<User size={14}/>} text="Full Identity" />
           <input 
-            type="text" 
             name="name" 
-            className="form-input"
-            placeholder="e.g. Rahul Sharma"
-            value={formData.name} 
+            placeholder="John Doe" 
+            className={inputClass} 
             onChange={handleChange} 
+            required 
           />
-          {errors.name && <span className="error-msg">{errors.name}</span>}
         </div>
-
-        <div className="form-field">
-          <label>Phone Number</label>
+        <div className="space-y-2">
+          <Label icon={<Phone size={14}/>} text="Contact Relay" />
           <input 
-            type="text" 
             name="phone" 
-            className="form-input"
-            placeholder="10-digit mobile"
-            value={formData.phone} 
+            placeholder="+1 (555) 000-0000" 
+            className={inputClass} 
             onChange={handleChange} 
+            required 
           />
-          {errors.phone && <span className="error-msg">{errors.phone}</span>}
         </div>
-
-        <div className="form-field">
-          <label>Vehicle Number</label>
+        <div className="space-y-2">
+          <Label icon={<Car size={14}/>} text="Vehicle ID" />
           <input 
-            type="text" 
             name="vehicle" 
-            className="form-input"
-            placeholder="MH 12 AB 1234"
-            value={formData.vehicle} 
+            placeholder="XYZ-7788" 
+            className={inputClass} 
             onChange={handleChange} 
           />
         </div>
-
-        <div className="form-field">
-          <label>Flat Number</label>
+        <div className="space-y-2">
+          <Label icon={<Home size={14}/>} text="Destination Unit" />
           <input 
-            type="text" 
             name="flatNumber" 
-            className="form-input"
-            placeholder="e.g. A-402"
-            value={formData.flatNumber} 
+            placeholder="WING-A 404" 
+            className={inputClass} 
             onChange={handleChange} 
+            required 
           />
-          {errors.flatNumber && <span className="error-msg">{errors.flatNumber}</span>}
         </div>
       </div>
 
-
-      <div className="form-field">
-        <label className="checkbox-group">
-          <input 
-            type="checkbox" 
-            name="isPriority" 
-            checked={formData.isPriority} 
-            onChange={handleChange} 
-          />
-          Priority Access (Fast Track)
+      <div className="flex items-center gap-4 bg-white/3 p-4 rounded-2xl border border-white/5 group hover:border-primary/30 transition-all cursor-pointer">
+        <input 
+          type="checkbox" 
+          name="isPriority" 
+          id="isPriority" 
+          className="w-5 h-5 rounded bg-slate-900 border-white/10 text-primary focus:ring-primary"
+          onChange={handleChange} 
+        />
+        <label htmlFor="isPriority" className="flex flex-col cursor-pointer">
+            <span className="text-sm font-black text-white group-hover:text-primary transition-all flex items-center gap-2">
+                <Zap size={14} className="fill-primary text-primary" /> VIP HIGH-PRIORITY CLEARANCE
+            </span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">ALLOCATE PREMIUM SLOTS AUTOMATICALLY</span>
         </label>
       </div>
 
-      <button type="submit" className="btn btn-primary" disabled={loading}>
-        {loading ? 'Processing...' : 'Generate AI Pass'}
+      <button 
+        type="submit" 
+        disabled={loading}
+        className="w-full bg-primary hover:bg-blue-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-primary/30 transition-all transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+      >
+        {loading ? (
+            <>
+                <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                PROCESSING PROTOCOL...
+            </>
+        ) : (
+            <>ISSUE SMART SECURITY PASS</>
+        )}
       </button>
     </form>
   );
-
 };
+
+const Label = ({ icon, text }) => (
+    <label className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-[2px] mb-3 ml-1">
+        {icon} {text}
+    </label>
+);
 
 export default VisitorForm;

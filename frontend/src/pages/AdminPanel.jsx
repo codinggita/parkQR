@@ -1,219 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Activity, Users, LayoutDashboard, ShieldCheck, 
+  ChevronRight, BarChart3, Database, AlertTriangle 
+} from 'lucide-react';
 import ParkingGrid from '../components/ParkingGrid';
-import NotificationList from '../components/NotificationList';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
-import socket from '../utils/socket';
-import { LayoutDashboard, Shield, BarChart3, Settings, MapPin } from 'lucide-react';
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState('monitor');
-  const [activeGate, setActiveGate] = useState('Gate A');
-  const [toasts, setToasts] = useState([]);
+    const [view, setView] = useState('insights');
 
-  // Multi-Gate Definition
-  const gates = ['Gate A', 'Gate B', 'Main Entrance'];
-
-  useEffect(() => {
-    // 1. Listen for real-time security events
-    socket.on('visitor-entered', (data) => addToast(`${data.visitor} entered at ${data.slot}`, 'success'));
-    socket.on('visitor-overstayed', (data) => addToast(`SECURITY ALERT: Overstay at ${data.slotId}`, 'error'));
-    socket.on('visitor-exited', (data) => addToast(`${data.visitor} cleared the gate`, 'primary'));
-
-    return () => {
-        socket.off('visitor-entered');
-        socket.off('visitor-overstayed');
-        socket.off('visitor-exited');
-    };
-  }, []);
-
-  const addToast = (message, type) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-    }, 5000);
-  };
-
-  return (
-    <div className="admin-saas-container animate-in">
-      {/* Toast Manager */}
-      <div className="toast-container">
-        {toasts.map(t => (
-            <div key={t.id} className={`toast toast-${t.type} animate-in`}>
-                {t.message}
+    return (
+        <div className="space-y-8 pb-20">
+            {/* Real-time Hero Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard label="Direct Occupancy" val="78%" trend="+12" icon={<Activity />} color="text-primary" />
+                <StatCard label="Active Sessions" val="1.2k" trend="+5" icon={<Users />} color="text-success" />
+                <StatCard label="API Latency" val="44ms" trend="-3" icon={<Database />} color="text-amber-500" />
+                <StatCard label="Threat Level" val="Minimal" trend="Stable" icon={<ShieldCheck />} color="text-primary" />
             </div>
-        ))}
-      </div>
 
-      {/* SaaS Header & Gate Switcher */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>Command Center</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Real-time monitoring & AI automation</p>
+            {/* View Switcher */}
+            <div className="flex items-center gap-8 border-b border-white/5 pb-0">
+                <ViewLink 
+                    active={view === 'insights'} 
+                    onClick={() => setView('insights')} 
+                    icon={<BarChart3 size={18}/>} 
+                    label="AI Insights" 
+                />
+                <ViewLink 
+                    active={view === 'grid'} 
+                    onClick={() => setView('grid')} 
+                    icon={<LayoutDashboard size={18}/>} 
+                    label="Live Grid" 
+                />
+                <ViewLink 
+                    active={view === 'security'} 
+                    onClick={() => setView('security')} 
+                    icon={<AlertTriangle size={18}/>} 
+                    label="Security Logs" 
+                />
+            </div>
+
+            {/* Dynamic Viewport */}
+            <div className="min-h-[500px]">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={view}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                    >
+                        {view === 'grid' && <ParkingGrid />}
+                        {view === 'insights' && <AnalyticsDashboard />}
+                        {view === 'security' && <SecurityPanel />}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
         </div>
-        
-        <div className="glass" style={{ display: 'flex', padding: '4px', borderRadius: '12px' }}>
-            {gates.map(g => (
-                <button 
-                   key={g} 
-                   onClick={() => setActiveGate(g)}
-                   style={{
-                       padding: '8px 16px',
-                       background: activeGate === g ? 'var(--primary)' : 'transparent',
-                       color: activeGate === g ? 'white' : 'var(--text-main)',
-                       border: 'none',
-                       borderRadius: '8px',
-                       fontSize: '0.8rem',
-                       fontWeight: 700,
-                       cursor: 'pointer',
-                       transition: 'all 0.2s'
-                   }}
-                >
-                    <MapPin size={14} style={{ marginRight: '4px' }} /> {g}
-                </button>
-            ))}
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', borderBottom: '1px solid var(--border-color)' }}>
-         <Tab title="Live Monitor" icon={<Shield size={18} />} active={activeTab === 'monitor'} onClick={() => setActiveTab('monitor')} />
-         <Tab title="Analytics" icon={<BarChart3 size={18} />} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-         <Tab title="Control Tower" icon={<LayoutDashboard size={18} />} active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
-         <Tab title="Settings" icon={<Settings size={18} />} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-      </div>
-
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'monitor' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-                <div className="glass" style={{ padding: '24px' }}>
-                    <ParkingGrid gate={activeGate} />
-                </div>
-                <div className="glass" style={{ padding: '24px' }}>
-                    <NotificationList />
-                </div>
-            </div>
-        )}
-        
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
-        
-        {activeTab === 'logs' && (
-            <div className="tab-content animate-in">
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '32px' }}>
-                    {/* Security Feed */}
-                    <div className="glass" style={{ padding: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Master Security Logs</h2>
-                            <button className="btn" style={{ fontSize: '0.7rem' }}>Download Log Archive</button>
-                        </div>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                        <th style={{ padding: '12px' }}>EVENT TYPE</th>
-                                        <th style={{ padding: '12px' }}>SOURCE</th>
-                                        <th style={{ padding: '12px' }}>DESCRIPTION</th>
-                                        <th style={{ padding: '12px' }}>TIMESTAMP</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <LogEntry type="ENTRY" source="GATE-A" msg="Guest Visit Registered: John Doe" time="10:22 AM" />
-                                    <LogEntry type="ANOMALY" source="GATE-B" msg="Potential Piggybacking Detected: MH-01-V-888" time="10:45 AM" isWarning />
-                                    <LogEntry type="OVERSTAY" source="SLOT-C4" msg="Security Alert: Slot C4 exceeded 4h limit" time="11:15 AM" isError />
-                                    <LogEntry type="EXIT" source="MAIN-E" msg="VIP Exit Verified" time="11:30 AM" />
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* AI Anomaly Monitor */}
-                    <div className="glass" style={{ padding: '24px' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '20px' }}>AI Anomalies</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <AnomalyCard title="Double Scan" desc="Multiple access requests for Token X-99" count={2} />
-                            <AnomalyCard title="Rapid Exit" desc="Vehicle exited < 120s from entry" count={5} />
-                            <div style={{ padding: '16px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '12px', textAlign: 'center' }}>
-                                <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>Scan Accuracy: 99.4%</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
-      </div>
-
-      <style>{`
-        .tab-btn {
-            padding: 12px 12px 12px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            color: var(--text-muted);
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-            font-weight: 600;
-        }
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        .toast-container {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .toast {
-            padding: 16px 24px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-left: 6px solid var(--primary);
-            font-weight: 700;
-            min-width: 300px;
-        }
-        .toast-success { border-left-color: var(--success); }
-        .toast-error { border-left-color: var(--error); background: #fef2f2; color: #991b1b; }
-      `}</style>
-    </div>
-  );
+    );
 };
 
-const LogEntry = ({ type, source, msg, time, isWarning, isError }) => (
-    <tr style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
-        <td style={{ padding: '12px' }}>
-            <span style={{ 
-                padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800,
-                background: isError ? 'var(--error)' : (isWarning ? '#F59E0B' : 'var(--primary)'),
-                color: 'white'
-            }}>{type}</span>
-        </td>
-        <td style={{ padding: '12px', fontWeight: 700 }}>{source}</td>
-        <td style={{ padding: '12px' }}>{msg}</td>
-        <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{time}</td>
-    </tr>
-);
-
-const AnomalyCard = ({ title, desc, count }) => (
-    <div className="glass" style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{title}</span>
-            <span style={{ color: 'var(--error)', fontWeight: 800, fontSize: '0.85rem' }}>{count}</span>
+const StatCard = ({ label, val, trend, icon, color }) => (
+    <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 hover:border-primary/40 transition-all group overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all"></div>
+        <div className="flex justify-between items-start mb-6">
+            <div className={`p-3 bg-white/5 rounded-2xl ${color} group-hover:scale-110 transition-all`}>
+                {icon}
+            </div>
+            <div className="bg-success/10 text-success text-[10px] font-black px-2 py-1 rounded-lg italic tracking-widest">{trend}%</div>
         </div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{desc}</p>
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[2px] mb-1">{label}</p>
+        <h3 className="text-3xl font-black">{val}</h3>
     </div>
 );
 
-const Tab = ({ title, icon, active, onClick }) => (
-    <div className={`tab-btn ${active ? 'active' : ''}`} onClick={onClick}>
+const ViewLink = ({ active, onClick, icon, label }) => (
+    <button 
+        onClick={onClick}
+        className={`flex items-center gap-2 pb-4 px-2 font-bold text-sm tracking-tight transition-all relative
+            ${active ? 'text-primary' : 'text-slate-500 hover:text-white'}`}
+    >
         {icon}
-        {title}
+        {label}
+        {active && (
+            <motion.div 
+                layoutId="nav-active"
+                className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-4px_12px_rgba(37,99,235,0.4)]"
+            />
+        )}
+    </button>
+);
+
+const SecurityPanel = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-[32px] p-8">
+            <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                <Database className="text-primary" /> Master Access Logs
+            </h3>
+            <div className="space-y-4">
+                <SecurityRow type="ENTRY" gate="North" time="10:22:04" />
+                <SecurityRow type="EXIT" gate="West" time="10:25:55" />
+                <SecurityRow type="DENIED" gate="South" time="10:30:12" isError />
+                <SecurityRow type="ENTRY" gate="North" time="10:35:44" />
+            </div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
+            <h3 className="text-xl font-black mb-6">Threat Intelligence</h3>
+            <div className="space-y-6">
+                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex gap-4">
+                    <AlertTriangle className="text-red-500 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-black text-white">Unauthorized Access</p>
+                        <p className="text-xs text-slate-400 mt-1">Token RE-55 detected at Gate B without clearance.</p>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+);
+
+const SecurityRow = ({ type, gate, time, isError }) => (
+    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+        <div className="flex items-center gap-4">
+             <div className={`text-[10px] font-black px-2 py-1 rounded-md ${isError ? 'bg-red-500 text-white' : 'bg-primary text-white'}`}>{type}</div>
+             <div>
+                <p className="text-sm font-bold">Gate {gate}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{time} UTC</p>
+             </div>
+        </div>
+        <ChevronRight className="text-slate-600" size={16} />
     </div>
 );
 

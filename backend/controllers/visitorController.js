@@ -168,49 +168,53 @@ async function handleActualScan(req, res, visitor, qrPass, gateName) {
     let statusUpdate = {};
     let assignedSlotData = null;
 
-    // Security: Prevent Entry Replay
-    if (visitor.status === "inside" && !qrPass.isUsed) {
-        // This is likely an exit attempt
-    } else if (visitor.status === "exited" || qrPass.isUsed) {
+    // Security: Prevent state spoofing
+    if (visitor.status === "exited" || qrPass.isUsed) {
         return res.status(403).json({ success: false, message: 'QR INVALID OR EXPIRED' });
     }
+
+    const io = req.app.get('socketio');
 
     if (visitor.status === "coming") {
       // --- SECURE ENTRY ---
       const slot = await assignSlot(visitor);
-      if (!slot) return res.status(503).json({ success: false, message: 'PARKING FULL' });
+      if (!slot) {
+        await Notification.create({ message: 'CRITICAL: Gate blocked - Parking Full', type: 'OVERSTAY', userId: 'admin' });
+        if (io) io.emit('notification-added');
+        return res.status(503).json({ success: false, message: 'PARKING FULL' });
+      }
 
       statusUpdate = {
         status: "inside", entryTime: new Date(), gate: gateName || "North Gate",
-        assignedSlot: slot._id, scannedBy: req.body.scannedBy || 'System'
+        assignedSlot: slot._id, scannedBy: req.user?.id || 'System'
       };
       assignedSlotData = slot;
       message = `ENTRY GRANTED: Slot ${slot.slotId}`;
-      // Note: QR remains valid for Exit
     } 
     else if (visitor.status === "inside") {
       // --- SECURE EXIT ---
-      await freeSlot(visitor.assignedSlot);
+      if (visitor.assignedSlot) {
+        await freeSlot(visitor.assignedSlot);
+      }
+      
       statusUpdate = { status: "exited", exitTime: new Date(), assignedSlot: null };
       
-      const durationMins = Math.round((statusUpdate.exitTime - visitor.entryTime) / (1000 * 60));
+      const durationMins = Math.max(0, Math.round((statusUpdate.exitTime - visitor.entryTime) / (1000 * 60)));
       message = `EXIT GRANTED: Stay Duration: ${durationMins} mins`;
       
-      qrPass.isUsed = true; // QR is now dead
+      qrPass.isUsed = true;
       await qrPass.save();
     } 
 
     Object.assign(visitor, statusUpdate);
     await visitor.save();
 
-    // Sockets & Notifications
-    const io = req.app.get('socketio');
-    const notifData = {
-        message: `${visitor.name} (${visitor.vehicle}) ${visitor.status === 'inside' ? 'Entered' : 'Exited'} via ${visitor.gate}`,
+    // Notify Admins
+    const notif = await Notification.create({
+        message: `${visitor.name} (${visitor.vehicle}) ${visitor.status === 'inside' ? 'Entered' : 'Exited'} @ ${gateName}`,
         type: visitor.status === 'inside' ? 'ENTRY' : 'EXIT', 
         userId: 'admin'
-    };
-    const notif = await Notification.create(notifData);
+    });
 
     if (io) {
         io.emit(visitor.status === 'inside' ? 'visitor-entered' : 'visitor-exited', {
@@ -223,7 +227,7 @@ async function handleActualScan(req, res, visitor, qrPass, gateName) {
       success: true, message,
       data: {
         name: visitor.name, flat: visitor.flatNumber, status: visitor.status,
-        slotId: assignedSlotData ? assignedSlotData.slotId : 'Assigned',
+        slotId: assignedSlotData ? assignedSlotData.slotId : 'Released',
         entryTime: visitor.entryTime, exitTime: visitor.exitTime
       }
     });
