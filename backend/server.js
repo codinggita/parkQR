@@ -1,13 +1,17 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
 const connectDB = require('./config/db');
-const Visitor = require('./models/Visitor');
 
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
+
+// Enterprise Logging
+app.use(morgan('dev'));
 
 // Connect to Database
 connectDB();
@@ -41,6 +45,16 @@ setInterval(() => {
 
 app.get('/', (req, res) => {
     res.send('Smart Parking & Visitor Management System API is Online...');
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error(`💥 ERROR: ${err.message}`);
+    res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    });
 });
 
 const PORT = process.env.PORT || 5000;
