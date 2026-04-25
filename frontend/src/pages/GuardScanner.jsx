@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertOctagon, Timer, ShieldCheck, MapPin } from 'lucide-react';
+import { 
+  ShieldCheck, AlertTriangle, CheckCircle, 
+  Clock, MapPin, ScanLine, RotateCcw, Zap
+} from 'lucide-react';
 
 const GuardScanner = () => {
+  const { user } = useAuth();
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
@@ -14,46 +19,16 @@ const GuardScanner = () => {
     setError(null);
     setScanResult(null);
     
-    // Wait for React to render the #reader div
     setTimeout(() => {
         const scanner = new Html5QrcodeScanner("reader", { 
-          fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true 
+          fps: 15, 
+          qrbox: { width: 280, height: 280 },
+          rememberLastUsedCamera: true,
+          aspectRatio: 1.0
         });
         scanner.render(onScanSuccess, onScanError);
-        
-        // Save scanner instance to window for cleanup if needed
         window.scannerInstance = scanner;
-    }, 150);
-  };
-
-  const onScanSuccess = async (qrData) => {
-     if (loading) return;
-     setLoading(true);
-     
-     try {
-         const res = await fetch('http://localhost:5000/api/visitors/scan-qr', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ qrData, gateName: 'North Gate' })
-         });
-         const data = await res.json();
-         
-         if (data.success) {
-            setScanResult({ ...data.data, message: data.message, type: 'success' });
-            if (window.navigator.vibrate) window.navigator.vibrate(100);
-            
-            // Stop scanning on success
-            stopScanner();
-         } else {
-            setScanResult({ message: data.message, type: 'error' });
-            if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-            stopScanner();
-         }
-     } catch (e) {
-         setError('Network Sync Failed. Is the server online?');
-     } finally {
-         setLoading(false);
-     }
+    }, 200);
   };
 
   const stopScanner = () => {
@@ -63,55 +38,91 @@ const GuardScanner = () => {
     }
   };
 
-  const onScanError = (err) => { /* Ignore regular scanning noise */ };
-
-  const handleReset = () => {
-      setScanResult(null);
-      setError(null);
-      startScanner();
+  const onScanSuccess = async (qrData) => {
+     if (loading) return;
+     setLoading(true);
+     
+     try {
+         const res = await fetch('http://localhost:5000/api/visitors/scan-qr', {
+             method: 'POST',
+             headers: { 
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${user?.token}`
+             },
+             body: JSON.stringify({ qrData, gateName: 'NORTH-TERMINAL-01' })
+         });
+         
+         const data = await res.json();
+         
+         if (res.status === 401) {
+             setError('TERMINAL REJECTED: Security Token Invalid');
+             stopScanner();
+         } else if (data.success) {
+             setScanResult({ ...data.data, message: data.message, type: 'success' });
+             if (window.navigator.vibrate) window.navigator.vibrate(100);
+             stopScanner();
+         } else {
+             setScanResult({ message: data.message, type: 'error' });
+             if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+             stopScanner();
+         }
+     } catch (e) {
+         setError('NETWORK DESYNC: Access Node Offline');
+     } finally {
+         setLoading(false);
+     }
   };
 
+  const onScanError = () => {}; // Noise filter
+
   return (
-    <div className="scanner-saas animate-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div className="max-w-6xl mx-auto py-6 animate-in">
+        <div className="flex justify-between items-center mb-10">
             <div>
-                <h1 style={{ fontWeight: 800, fontSize: '1.8rem', margin: 0 }}>Security Terminal</h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Scan visitor token for validation</p>
+                <h1 className="text-3xl font-black text-white flex items-center gap-3">
+                    <ScanLine className="text-primary" size={28} /> Guard Terminal
+                </h1>
+                <p className="text-slate-500 text-sm font-medium uppercase tracking-widest mt-1">Biometric & Optical Clearance Logic</p>
             </div>
-            <div className="glass" style={{ padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} color="var(--primary)" />
-                <span style={{ fontWeight: 700, fontSize: '0.8rem' }}>GATE-NORTH-01</span>
+            <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3">
+                <MapPin size={16} className="text-primary" />
+                <span className="text-xs font-black tracking-widest">GATE-NORTH-A1</span>
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1fr', gap: '32px' }}>
-            {/* Left: Scanner Core */}
-            <div className="glass" style={{ padding: '24px', borderRadius: '24px', minHeight: '400px', position: 'relative' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Scanner Viewport */}
+            <div className="bg-slate-900 border-2 border-white/5 rounded-[40px] aspect-square relative overflow-hidden flex flex-col items-center justify-center shadow-2xl">
                 {!isScanning && !scanResult ? (
-                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px' }}>
-                         <ShieldCheck size={80} color="var(--primary)" style={{ opacity: 0.15, marginBottom: '24px' }} />
-                         <h3 style={{ marginBottom: '12px' }}>Ready for Verification</h3>
-                         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '32px' }}>
-                            Initialize the system scanner to begin gate validation.
-                         </p>
-                         <button className="btn btn-primary" onClick={startScanner} style={{ padding: '12px 32px' }}>
-                            Activate Laser Scanner
-                         </button>
+                    <div className="text-center p-10 flex flex-col items-center">
+                        <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center mb-8 border border-primary/20">
+                            <ShieldCheck size={48} className="text-primary" />
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-3">Scanner Inactive</h3>
+                        <p className="text-slate-500 text-sm font-medium mb-10 max-w-xs mx-auto">
+                            Initialize the optical sensor to begin credential verification for arriving visitors.
+                        </p>
+                        <button 
+                            onClick={startScanner}
+                            className="px-10 py-4 bg-primary hover:bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center gap-3"
+                        >
+                            <Zap size={20} fill="currentColor" /> ACTIVATE LASER
+                        </button>
                     </div>
                 ) : (
-                    <div id="reader" style={{ border: 'none', borderRadius: '16px', overflow: 'hidden' }}></div>
+                    <div id="reader" className="w-full h-full object-cover"></div>
                 )}
 
                 {loading && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                        <div className="spinner"></div>
-                        <p style={{ marginTop: '16px', fontWeight: 700, letterSpacing: '1px' }}>VERIFYING CLOUD PASS...</p>
+                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-10">
+                         <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                         <p className="mt-6 text-[10px] font-black text-white uppercase tracking-[4px] animate-pulse">Verifying Credentials...</p>
                     </div>
                 )}
             </div>
 
-            {/* Right: Real-time Feedback Card */}
-            <div className="feedback-column">
+            {/* Result Panel */}
+            <div className="flex flex-col gap-6">
                 <AnimatePresence mode="wait">
                     {scanResult ? (
                         <motion.div 
@@ -119,68 +130,74 @@ const GuardScanner = () => {
                             initial={{ x: 20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: -20, opacity: 0 }}
-                            className={`glass result-card result-${scanResult.type}`}
-                            style={{ padding: '40px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRadius: '24px' }}
+                            className={`flex-1 rounded-[40px] p-10 border-2 flex flex-col items-center justify-center text-center
+                                ${scanResult.type === 'success' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}
                         >
-                            <div style={{ marginBottom: '32px' }}>
+                            <div className="mb-8">
                                 {scanResult.type === 'success' ? (
-                                    <CheckCircle size={80} color="var(--success)" />
+                                    <div className="h-24 w-24 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20">
+                                        <CheckCircle size={48} className="text-emerald-500" />
+                                    </div>
                                 ) : (
-                                    <AlertOctagon size={80} color="var(--error)" />
+                                    <div className="h-24 w-24 bg-red-500/10 rounded-full flex items-center justify-center border-4 border-red-500/20">
+                                        <AlertTriangle size={48} className="text-red-500" />
+                                    </div>
                                 )}
                             </div>
-                            
-                            <h2 style={{ marginBottom: '12px', textAlign: 'center', fontWeight: 800 }}>
+
+                            <h2 className="text-3xl font-black text-white mb-2 italic tracking-tighter">
                                 {scanResult.type === 'success' ? 'ACCESS GRANTED' : 'ACCESS DENIED'}
                             </h2>
-                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '32px' }}>{scanResult.message}</p>
+                            <p className="text-slate-400 font-medium mb-10">{scanResult.message}</p>
 
                             {scanResult.name && (
-                                <div style={{ width: '100%', background: 'rgba(0,0,0,0.02)', padding: '20px', borderRadius: '16px' }}>
-                                    <div className="detail-row"><span>Visitor Name</span> <strong>{scanResult.name}</strong></div>
-                                    <div className="detail-row"><span>Unit / Flat</span> <strong>{scanResult.flat || 'N/A'}</strong></div>
-                                    <div className="detail-row" style={{ border: 'none' }}><span>Status</span> 
-                                        <span className={`status-badge ${scanResult.status === 'inside' ? 'badge-active' : 'badge-used'}`}>
-                                            {scanResult.status}
-                                        </span>
+                                <div className="w-full bg-white/5 border border-white/5 rounded-3xl p-6 space-y-4">
+                                    <DetailRow label="Visitor" val={scanResult.name} />
+                                    <DetailRow label="Slot" val={scanResult.slotId} isPrimary />
+                                    <DetailRow label="Unit" val={scanResult.flat || 'N/A'} />
+                                    <div className="pt-2">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                            <span>Validation Code</span>
+                                            <span className="text-emerald-500 font-mono tracking-normal text-xs">{Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             <button 
-                                className="btn btn-primary" 
-                                style={{ marginTop: '40px', width: '100%', padding: '14px' }}
-                                onClick={handleReset}
+                                onClick={() => { setScanResult(null); startScanner(); }}
+                                className="mt-10 w-full py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-3"
                             >
-                                Continue Scanning
+                                <RotateCcw size={18} /> RESET TERMINAL
                             </button>
                         </motion.div>
                     ) : (
-                         <div className="glass" style={{ padding: '32px', height: '400px', opacity: 0.5, borderStyle: 'dashed', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <Timer size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                                <p style={{ fontWeight: 600 }}>Waiting for Security Token</p>
-                            </div>
-                         </div>
+                        <div className="flex-1 rounded-[40px] border-2 border-dashed border-white/5 flex flex-col items-center justify-center p-10 opacity-30">
+                            <Clock size={64} className="text-slate-500 mb-6" />
+                            <p className="font-black text-slate-500 uppercase tracking-widest text-xs">Waiting for Scanner Stream</p>
+                        </div>
                     )}
                 </AnimatePresence>
+
+                {error && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 text-red-500 text-xs font-black uppercase tracking-wider"
+                    >
+                        <AlertTriangle size={16} /> {error}
+                    </motion.div>
+                )}
             </div>
         </div>
-
-        {error && (
-             <div className="glass animate-in" style={{ marginTop: '24px', padding: '16px 24px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 600 }}>
-                <AlertOctagon size={20} />
-                {error}
-             </div>
-        )}
-
-        <style>{`
-            .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
-            .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-            @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
     </div>
   );
 };
+
+const DetailRow = ({ label, val, isPrimary }) => (
+    <div className="flex justify-between items-center border-b border-white/5 pb-3">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[2px]">{label}</span>
+        <span className={`text-sm font-black ${isPrimary ? 'text-primary' : 'text-white'}`}>{val}</span>
+    </div>
+);
 
 export default GuardScanner;

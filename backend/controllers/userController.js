@@ -13,16 +13,21 @@ exports.login = async (req, res) => {
 
     if (!isDBConnected()) {
         console.log('⚠️ Running in Mock Security Mode');
-        const mockUser = mockStore.users.find(u => u.email === email && u.password === password);
+        const cleanEmail = email?.trim().toLowerCase();
+        const mockUser = mockStore.users.find(u => 
+            u.email.toLowerCase() === cleanEmail && 
+            u.password === password.trim()
+        );
+        
         if (mockUser) {
-            console.log('✅ Mock Auth Success');
+            console.log(`✅ Mock Auth Success for ${cleanEmail}`);
             return res.status(200).json({
                 success: true,
                 token: 'mock-jwt-token-pro-4455',
                 user: { id: mockUser._id, name: mockUser.name, role: mockUser.role }
             });
         }
-        console.log('❌ Mock Auth Failed');
+        console.log(`❌ Mock Auth Failed for ${cleanEmail}. Check password: [${password}]`);
         return res.status(401).json({ success: false, message: 'Invalid Mock Credentials' });
     }
 
