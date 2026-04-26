@@ -5,6 +5,7 @@ ParkSmart AI is a production-ready, SaaS-level platform for residential societie
 ![Status](https://img.shields.io/badge/Status-Production--Ready-success)
 ![Stack](https://img.shields.io/badge/Stack-React%20+%20Express%20+%20MongoDB%20+%20Firebase-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Theme](https://img.shields.io/badge/Theme-Premium%20Light%20UI-white)
 
 ---
 
@@ -18,28 +19,113 @@ ParkSmart AI is a production-ready, SaaS-level platform for residential societie
 ### 📡 Real-Time Security Engine
 - **Socket.IO** — Live WebSocket connections for instant entry/exit alerts.
 - **Overstay Detection** — Background cron (30 s interval) monitors visitors exceeding time limits.
-- **Dynamic Toasts** — Interactive real-time notifications for security personnel.
+- **Dynamic Toasts** — React Hot Toast notifications for instant feedback.
 
 ### 📊 Intelligent Analytics Center
 - **Data Aggregation** — MongoDB aggregation pipelines for daily visitor trends.
-- **Visual KPIs** — Recharts-powered charts for occupancy rates, peak hours, and security alerts.
-- **Audit Logging** — Full history of visitor movements and parking usage.
+- **4 Chart Types** — AreaChart, PieChart, BarChart, RadialBarChart via Recharts.
+- **CSV Export** — Download analytics data on demand.
 
 ### 🛂 Smart Visitor Entry (QR-Based)
 - **Instant Pass Generation** — QR-based entry tokens via `qrcode` library.
-- **Unified Scan Flow** — Single `/scan-qr` endpoint handles both entry (`coming → inside`) and exit (`inside → exited`).
+- **Unified Scan Flow** — Single `/scan-qr` endpoint handles both entry and exit.
 - **Expiry & Reuse Prevention** — Strict validation on QR expiry and scan-state transitions.
-- **Priority (VIP) System** — Tiered slot allocation for VIP guests.
+- **Countdown Timer** — Live remaining-time display on generated passes.
 
 ### 🏗️ Fail-Safe Architecture
-- **Intelligent Mock Mode** — Auto-switches to in-memory data store if MongoDB is offline, ensuring 100 % uptime for dev/testing.
-- **Clean MVC Structure** — Controllers → Routes → Models separation for enterprise scalability.
+- **Intelligent Mock Mode** — Auto-switches to in-memory data store if MongoDB is offline.
+- **Clean MVC Structure** — Controllers → Routes → Models separation for scalability.
 
-### 🎨 Premium SaaS UI
-- **Glassmorphism** — Frosted-glass cards, backdrop-blur panels, and translucent sidebars.
-- **Mouse Glow Effect** — Cursor-following radial gradient for a high-end feel.
-- **Framer Motion** — Page transitions, tab switching animations, and micro-interactions.
-- **Collapsible Sidebar** — Responsive navigation with smooth width transitions.
+### 🎨 Premium Light Theme UI
+- **Design System** — Clean white cards, subtle shadows, soft borders (#E2E8F0).
+- **Color Palette** — Primary Blue (#2563EB), Success Green (#10B981), Danger Red (#EF4444), Warning Amber (#F59E0B).
+- **Typography** — Inter font (Google Fonts), 300–900 weights.
+- **Collapsible Sidebar** — 240px expanded / 64px collapsed with blue active-border indicators.
+- **Framer Motion** — Page transitions, modal animations, toast notifications.
+- **Responsive** — Works on desktop and mobile.
+
+---
+
+## 🗺️ System Architecture
+
+```mermaid
+graph TD
+    %% Roles
+    Resident((🏠 Resident))
+    Guard((🛡️ Guard))
+    Admin((👑 Admin))
+    Visitor((🚗 Visitor))
+
+    %% Frontend Interfaces
+    subgraph Frontend [React Frontend - Vite]
+        Login[Login Page / OTP]
+        DashResident[Resident Dashboard]
+        DashAdmin[Admin Analytics]
+        Scanner[Guard Scanner App]
+        Booking[Parking Map UI]
+        Chatbot[🤖 AI Chatbot]
+    end
+
+    %% Backend Services
+    subgraph Backend [Node.js + Express Server]
+        API_Gateway[API Routes]
+        SocketIO[Socket.io Server]
+        CronJob[⏳ Background Cron Job]
+        
+        subgraph Controllers
+            AuthCtrl[Auth Controller]
+            VisitorCtrl[Visitor Controller]
+            QRCtrl[QR Controller]
+            AICtrl[AI Controller]
+        end
+    end
+
+    %% External APIs
+    subgraph ExternalServices [Third-Party APIs]
+        Twilio[📱 Twilio SMS API]
+        Anthropic[🧠 Anthropic Claude AI]
+        GMap[🗺️ Google Maps API]
+    end
+
+    %% Database
+    subgraph Database [MongoDB]
+        UsersDB[(Users)]
+        VisitorsDB[(Visitors)]
+        SlotsDB[(Parking Slots)]
+    end
+
+    %% Workflows
+    Resident -->|Request OTP| Login
+    Login --> AuthCtrl
+    AuthCtrl -->|Trigger SMS| Twilio
+    Twilio -->|Delivers OTP| Resident
+
+    Resident -->|Creates Pass| DashResident
+    DashResident --> VisitorCtrl
+    VisitorCtrl --> QRCtrl
+    QRCtrl -->|Generates QR Link| Visitor
+
+    Visitor -->|Shows QR/Number Plate at Gate| Guard
+    Guard --> Scanner
+    Scanner -->|Scans QR / ALPR| VisitorCtrl
+    VisitorCtrl -->|Assigns Slot| SlotsDB
+    VisitorCtrl -->|Triggers Entry SMS| Twilio
+
+    Scanner -->|Emits Live Event| SocketIO
+    SocketIO -->|Live Update| Booking
+    SocketIO -->|Live Update| DashAdmin
+
+    Booking -->|Renders Live Slots| GMap
+
+    CronJob -->|Checks DB| SlotsDB
+    CronJob -->|If Time Exceeds| Twilio
+    Twilio -->|Overstay Alert SMS| Resident
+
+    Admin -->|Asks Question| Chatbot
+    Chatbot --> AICtrl
+    AICtrl -->|Analyzes Data| Anthropic
+    Anthropic -->|Returns Insight| Chatbot
+```
 
 ---
 
@@ -53,6 +139,26 @@ ParkSmart AI is a production-ready, SaaS-level platform for residential societie
 | **Auth** | Firebase Auth (client) + Firebase Admin SDK (server) + JWT |
 | **QR Engine** | `qrcode` (generation) + `html5-qrcode` (camera scanning) |
 | **Realtime** | Socket.IO (bi-directional WebSockets) |
+| **AI/ML** | Anthropic Claude API (`@anthropic-ai/sdk`) — Chatbot, Risk Analysis, Summaries |
+| **Notifications** | React Hot Toast |
+
+---
+
+## 🖥️ Pages (8 Total)
+
+| # | Page | Component | Description |
+|---|---|---|---|
+| 1 | **Login** | `LoginPage` | Centered card, dot-pattern background, role quick-access buttons |
+| 2 | **Dashboard** | `AdminPanel` | 4 stat cards, visitor trend chart, peak hours chart, recent table |
+| 3 | **Visitor Entry** | `VisitorEntry` | Split form/QR layout, duration selector, VIP toggle, countdown |
+| 4 | **Guard Scanner** | `GuardScanner` | Camera view, animated scan line, manual input fallback, recent scans |
+| 5 | **Parking Map** | `BookingPage` | Filter bar, 4-column slot grid, overstay pulse, detail drawer |
+| 6 | **Analytics** | `AnalyticsDashboard` | Date range picker, 4 KPIs, Area/Pie/Bar/Radial charts, CSV export |
+| 7 | **Notifications** | `NotificationsPage` | Filter tabs, color-coded cards, mark read, delete, empty state |
+| 8 | **Residents** | `UserDashboard` | Welcome card, active visitors, history table with search/pagination |
+
+**Floating Component:**
+| — | **AI Chatbot** | `AIChatbot` | Floating chat bubble, Claude-powered assistant, quick suggestions |
 
 ---
 
@@ -102,7 +208,8 @@ parkQR/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AnalyticsDashboard.jsx  # Charts & KPI cards (Recharts)
+│   │   │   ├── AppLayout.jsx           # Sidebar + header layout wrapper
+│   │   │   ├── AnalyticsDashboard.jsx  # (legacy) Charts component
 │   │   │   ├── NotificationBell.jsx    # Header notification icon
 │   │   │   ├── NotificationList.jsx    # Alert feed panel
 │   │   │   ├── ParkingGrid.jsx         # Visual parking slot grid
@@ -111,26 +218,29 @@ parkQR/
 │   │   ├── context/
 │   │   │   └── AuthContext.jsx         # Firebase Auth provider + role state
 │   │   ├── pages/
-│   │   │   ├── AdminPanel.jsx          # Admin overview dashboard
-│   │   │   ├── BookingPage.jsx         # Slot booking interface
+│   │   │   ├── AdminPanel.jsx          # Dashboard with stats, charts, table
+│   │   │   ├── AnalyticsDashboard.jsx  # Full analytics page (4 charts)
+│   │   │   ├── BookingPage.jsx         # Parking slot grid with filter/drawer
 │   │   │   ├── Dashboard.jsx           # General dashboard view
 │   │   │   ├── GuardScanner.jsx        # QR camera scanner terminal
-│   │   │   ├── LoginPage.jsx           # Firebase login/signup page
+│   │   │   ├── LoginPage.jsx           # Firebase login page (light theme)
+│   │   │   ├── NotificationsPage.jsx   # Notification center
 │   │   │   ├── ParkingHome.jsx         # Parking landing page
 │   │   │   ├── SpotListing.jsx         # Available spots list
-│   │   │   ├── UserDashboard.jsx       # User-specific dashboard
-│   │   │   └── VisitorEntry.jsx        # Visitor registration page
+│   │   │   ├── UserDashboard.jsx       # Resident dashboard
+│   │   │   └── VisitorEntry.jsx        # Visitor registration + QR generation
 │   │   ├── services/
-│   │   │   ├── bookingService.js       # Booking API calls
-│   │   │   └── parkingService.js       # Parking API calls
+│   │   │   ├── bookingService.js       # Firestore booking CRUD
+│   │   │   └── parkingService.js       # Firestore parking listener
 │   │   ├── utils/
 │   │   │   ├── seedSlots.js            # Client-side slot seeding
 │   │   │   └── socket.js              # Socket.IO client instance
-│   │   ├── App.jsx                     # Root app — routing, SaaS layout, mouse glow
+│   │   ├── App.jsx                     # Root app — routing + toast provider
 │   │   ├── firebase.js                 # Firebase client SDK config
-│   │   ├── index.css                   # Global styles
+│   │   ├── index.css                   # Global styles + Inter font
 │   │   └── main.jsx                    # React DOM entry point
 │   ├── .env                            # VITE_FIREBASE_* config keys
+│   ├── tailwind.config.js              # Design system tokens
 │   ├── postcss.config.js
 │   └── package.json
 │
@@ -180,6 +290,7 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
+VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key
 ```
 
 ### 4. Running the System
@@ -224,17 +335,28 @@ node backend/scripts/seedParkingSlots.js
 | `GET` | `/api/analytics/dashboard` | Get analytics KPIs |
 | `GET` | `/api/notifications` | Fetch notifications |
 | `POST` | `/api/notifications/read` | Mark notifications as read |
+| `POST` | `/api/ai/ask` | Chat with AI Assistant |
+| `GET` | `/api/ai/analyze/:visitorId` | AI Risk Analysis |
+| `GET` | `/api/ai/summary` | AI Daily Summary |
 
 ---
 
-## 🖥️ App Navigation
+## 🎨 Design System
 
-| Tab | Page Component | Description |
-|-----|---------------|-------------|
-| **Overview** | `AdminPanel` | Dashboard with analytics, KPIs, and charts |
-| **Book Slot** | `BookingPage` | Interactive parking slot booking interface |
-| **Visitors** | `VisitorEntry` | Visitor registration form with QR generation |
-| **Terminal** | `GuardScanner` | QR camera scanner for guard entry/exit processing |
+| Token | Value |
+|-------|-------|
+| Primary | `#2563EB` (Blue) |
+| Success | `#10B981` (Green) |
+| Danger | `#EF4444` (Red) |
+| Warning | `#F59E0B` (Amber) |
+| Background | `#F8FAFC` |
+| Card | `#FFFFFF` |
+| Text Primary | `#0F172A` |
+| Text Secondary | `#64748B` |
+| Border | `#E2E8F0` |
+| Font | Inter (Google Fonts) |
+| Card Radius | 12px |
+| Button Radius | 8px |
 
 ---
 
