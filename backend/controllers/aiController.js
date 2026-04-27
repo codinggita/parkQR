@@ -1,9 +1,10 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Visitor = require('../models/Visitor');
 const ParkingSlot = require('../models/ParkingSlot');
 
-// Initialize Anthropic client
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 /**
  * 🤖 Smart Parking Assistant — Chat endpoint
@@ -50,22 +51,24 @@ RULES:
 - Keep responses under 200 words unless asked for detail.
 - Use simple language. You may respond in Hindi or English based on the user's language.`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: question }]
+    const chat = model.startChat({
+      history: [
+        { role: "user", parts: [{ text: "System Context: " + systemPrompt }] },
+        { role: "model", parts: [{ text: "Understood. I am ParkSmart AI, ready to assist." }] },
+      ],
     });
 
-    const reply = message.content[0].text;
+    const result = await chat.sendMessage(question);
+    const response = await result.response;
+    const reply = response.text();
 
     res.json({ success: true, reply });
 
   } catch (error) {
     console.error('🤖 AI Error:', error.message);
 
-    if (error.status === 401) {
-      return res.status(500).json({ success: false, error: 'Invalid API key. Check ANTHROPIC_API_KEY in .env' });
+    if (error.message.includes('API_KEY_INVALID')) {
+      return res.status(500).json({ success: false, error: 'Invalid Gemini API key. Check GEMINI_API_KEY in .env' });
     }
 
     res.status(500).json({ success: false, error: 'AI service temporarily unavailable' });
@@ -85,12 +88,7 @@ const analyzeVisitor = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Visitor not found' });
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 512,
-      messages: [{
-        role: 'user',
-        content: `Analyze this visitor and provide a risk assessment.
+    const prompt = `Analyze this visitor and provide a risk assessment.
         
 Visitor Data:
 - Name: ${visitor.name}
@@ -103,16 +101,17 @@ Visitor Data:
 - Created: ${visitor.createdAt}
 
 Respond ONLY in valid JSON format with no markdown or extra text:
-{"risk": "LOW|MEDIUM|HIGH", "reason": "Brief 1-2 line explanation", "recommendation": "Brief action suggestion"}`
-      }]
-    });
+{"risk": "LOW|MEDIUM|HIGH", "reason": "Brief 1-2 line explanation", "recommendation": "Brief action suggestion"}`;
 
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const raw = response.text();
+    
     // Parse JSON response safely
-    const raw = message.content[0].text;
     const cleaned = raw.replace(/```json\s*|```\s*/g, '').trim();
-    const result = JSON.parse(cleaned);
+    const riskResult = JSON.parse(cleaned);
 
-    res.json({ success: true, ...result, visitor: { name: visitor.name, vehicle: visitor.vehicle, status: visitor.status } });
+    res.json({ success: true, ...riskResult, visitor: { name: visitor.name, vehicle: visitor.vehicle, status: visitor.status } });
 
   } catch (error) {
     console.error('🔍 Analysis Error:', error.message);
@@ -146,18 +145,14 @@ const getDailySummary = async (req, res) => {
       stats = { totalToday: 47, inside: 12, exited: 35, totalSlots: 50, occupied: 22 };
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 512,
-      messages: [{
-        role: 'user',
-        content: `Generate a brief daily parking summary in 3-4 bullet points.
+    const prompt = `Generate a brief daily parking summary in 3-4 bullet points.
         Stats: ${JSON.stringify(stats)}
-        Keep it concise and actionable. Include occupancy percentage.`
-      }]
-    });
+        Keep it concise and actionable. Include occupancy percentage.`;
 
-    res.json({ success: true, summary: message.content[0].text, stats });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    
+    res.json({ success: true, summary: response.text(), stats });
 
   } catch (error) {
     console.error('📊 Summary Error:', error.message);

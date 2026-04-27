@@ -127,7 +127,7 @@ const AIChatbot = () => {
                 <div>
                   <h3 className="text-sm font-bold text-white">ParkSmart AI</h3>
                   <p className="text-[10px] text-white/70 font-medium">
-                    {loading ? 'Thinking...' : 'Online · Powered by Claude'}
+                    {loading ? 'Thinking...' : 'Online · Powered by Gemini'}
                   </p>
                 </div>
               </div>
