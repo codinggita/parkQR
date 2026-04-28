@@ -1,11 +1,11 @@
 import { GoogleMap, Marker, InfoWindow, useLoadScript, DirectionsRenderer, Circle } from '@react-google-maps/api';
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 
 // 📍 Apni actual parking ki lat/lng yahan daalo
 const PARKING_LOCATION = { lat: 23.0225, lng: 72.5714 };
 const LIBRARIES = ['places'];
 
-export default function ParkingMap({ availableSlots = 12, occupiedSlots = 8 }) {
+const ParkingMap = React.memo(({ availableSlots = 12, occupiedSlots = 8 }) => {
   const [selected, setSelected]       = useState(false);
   const [directions, setDirections]   = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -50,35 +50,24 @@ export default function ParkingMap({ availableSlots = 12, occupiedSlots = 8 }) {
             if (status === 'OK') {
               setDirections(result);
             } else {
-              setError('Directions nahi mili: ' + status);
+              console.warn('Google Directions API failed:', status);
+              // 🌐 FREE FALLBACK: Open external Google Maps
+              const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${PARKING_LOCATION.lat},${PARKING_LOCATION.lng}`;
+              window.open(fallbackUrl, '_blank');
+              toast.success('Opening Directions in Google Maps...');
             }
           }
         );
       },
       () => {
         setLoadingDir(false);
-        setError('Location access denied kiya');
+        // If location permission denied, still offer to open maps with destination only
+        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${PARKING_LOCATION.lat},${PARKING_LOCATION.lng}`;
+        window.open(fallbackUrl, '_blank');
+        toast.error('Location denied. Opening Maps with destination...');
       }
     );
   }, []);
-
-  if (isDummyKey) return (
-    <div style={{...styles.wrapper, padding: 40, textAlign: 'center', background: '#FEF2F2', border: '1px solid #FCA5A5'}}>
-      <div style={{ fontSize: 40, marginBottom: 10 }}>🔑</div>
-      <h3 style={{ color: '#991B1B', margin: '0 0 10px', fontFamily: 'Inter, sans-serif' }}>Google Maps API Key Required</h3>
-      <p style={{ color: '#B91C1C', fontSize: 14, margin: 0, fontFamily: 'Inter, sans-serif' }}>
-        Please open <b>frontend/.env</b> and replace the dummy VITE_GOOGLE_MAPS_KEY with your actual Google Cloud API key.
-      </p>
-    </div>
-  );
-
-  if (loadError) return (
-    <div style={styles.loading}>❌ Error loading Google Maps</div>
-  );
-
-  if (!isLoaded) return (
-    <div style={styles.loading}>🗺️ Map load ho raha hai...</div>
-  );
 
   const totalSlots = availableSlots + occupiedSlots;
   const occupancyPercent = totalSlots > 0 ? Math.round((occupiedSlots / totalSlots) * 100) : 0;
@@ -103,6 +92,24 @@ export default function ParkingMap({ availableSlots = 12, occupiedSlots = 8 }) {
     }
     return markers;
   }, [totalSlots, occupiedSlots]);
+
+  if (isDummyKey) return (
+    <div style={{...styles.wrapper, padding: 40, textAlign: 'center', background: '#FEF2F2', border: '1px solid #FCA5A5'}}>
+      <div style={{ fontSize: 40, marginBottom: 10 }}>🔑</div>
+      <h3 style={{ color: '#991B1B', margin: '0 0 10px', fontFamily: 'Inter, sans-serif' }}>Google Maps API Key Required</h3>
+      <p style={{ color: '#B91C1C', fontSize: 14, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+        Please open <b>frontend/.env</b> and replace the dummy VITE_GOOGLE_MAPS_KEY with your actual Google Cloud API key.
+      </p>
+    </div>
+  );
+
+  if (loadError) return (
+    <div style={styles.loading}>❌ Error loading Google Maps</div>
+  );
+
+  if (!isLoaded) return (
+    <div style={styles.loading}>🗺️ Map load ho raha hai...</div>
+  );
 
   return (
     <div style={styles.wrapper}>
@@ -235,7 +242,7 @@ export default function ParkingMap({ availableSlots = 12, occupiedSlots = 8 }) {
       {error && <div style={styles.errorBox}>⚠️ {error}</div>}
     </div>
   );
-}
+});
 
 // 🎨 Styles (Updated with ParkSmart theme colors)
 const styles = {
@@ -263,3 +270,5 @@ const styles = {
   routeInfo: { padding: '12px 16px', background: '#F0FDF4', color: '#166534', textAlign: 'center', fontSize: 14, fontFamily: 'Inter, sans-serif', borderTop: '1px solid #DCFCE7' },
   errorBox:  { padding: '12px 16px', background: '#FEF2F2', color: '#991B1B', fontSize: 14, fontFamily: 'Inter, sans-serif', borderTop: '1px solid #FEE2E2', textAlign: 'center' }
 };
+
+export default ParkingMap;

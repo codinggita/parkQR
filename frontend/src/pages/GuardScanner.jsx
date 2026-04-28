@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,28 +20,30 @@ const GuardScanner = () => {
   const [scanMode, setScanMode] = useState('qr'); // 'qr' or 'alpr'
   const [alprScanning, setAlprScanning] = useState(false);
 
-  const startScanner = () => {
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setIsScanning(true);
     setError(null);
     setScanResult(null);
 
-    setTimeout(() => {
-      const scanner = new Html5QrcodeScanner("reader", {
-        fps: 15,
-        qrbox: { width: 250, height: 250 },
-        rememberLastUsedCamera: true,
-        aspectRatio: 1.0
-      });
-      scanner.render(onScanSuccess, () => {});
-      window.scannerInstance = scanner;
-    }, 200);
-  };
-
-  const stopScanner = () => {
-    if (window.scannerInstance) {
-      window.scannerInstance.clear().catch(() => {});
+    try {
+      const html5QrCode = new Html5Qrcode("reader"); // We need a div with id "reader" in the DOM for this library
+      const qrData = await html5QrCode.scanFileV2(file, true);
+      setIsScanning(false);
+      onScanSuccess(qrData.decodedText);
+    } catch (err) {
+      console.error("Error scanning image:", err);
+      setError("No valid QR code found in the image. Please try another one.");
       setIsScanning(false);
     }
+  };
+
+  const resetScanner = () => {
+    setIsScanning(false);
+    setScanResult(null);
+    setError(null);
   };
 
   const processQR = async (qrData) => {
@@ -62,21 +64,18 @@ const GuardScanner = () => {
 
       if (res.status === 401) {
         setError('Authentication failed. Please re-login.');
-        stopScanner();
       } else if (data.success) {
         const result = { ...data.data, message: data.message, type: 'success', time: new Date().toLocaleTimeString() };
         setScanResult(result);
         setRecentScans(prev => [result, ...prev].slice(0, 5));
         toast.success(data.message || 'Access Granted');
         if (window.navigator.vibrate) window.navigator.vibrate(100);
-        stopScanner();
       } else {
         const result = { message: data.message, type: 'error', time: new Date().toLocaleTimeString() };
         setScanResult(result);
         setRecentScans(prev => [result, ...prev].slice(0, 5));
         toast.error(data.message || 'Access Denied');
         if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-        stopScanner();
       }
     } catch (e) {
       setError('Network error. Backend may be offline.');
@@ -144,7 +143,7 @@ const GuardScanner = () => {
           {/* Scan Mode Toggle */}
           <div className="flex p-1 bg-surface rounded-xl">
             <button
-              onClick={() => { setScanMode('qr'); stopScanner(); setScanResult(null); }}
+              onClick={() => { setScanMode('qr'); resetScanner(); }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
                 scanMode === 'qr' ? 'bg-white text-primary shadow-sm' : 'text-txt-muted hover:text-txt-secondary'
               }`}
@@ -152,7 +151,7 @@ const GuardScanner = () => {
               <ScanLine size={16} /> QR Code
             </button>
             <button
-              onClick={() => { setScanMode('alpr'); stopScanner(); setScanResult(null); }}
+              onClick={() => { setScanMode('alpr'); resetScanner(); }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
                 scanMode === 'alpr' ? 'bg-white text-primary shadow-sm' : 'text-txt-muted hover:text-txt-secondary'
               }`}
@@ -165,25 +164,23 @@ const GuardScanner = () => {
             <div className="aspect-square relative flex items-center justify-center bg-surface">
               {scanMode === 'qr' ? (
                 <>
-                  {!isScanning && !scanResult ? (
+                  {!isScanning && !scanResult && (
                 <div className="text-center p-8">
                   <div className="h-20 w-20 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <ScanLine size={36} className="text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold text-txt-primary mb-2">Scanner Ready</h3>
                   <p className="text-sm text-txt-muted mb-6 max-w-xs mx-auto">
-                    Activate the camera to scan visitor QR codes for instant verification
+                    Upload a screenshot of the visitor's QR code to verify their entry
                   </p>
-                  <button
-                    onClick={startScanner}
-                    className="px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-btn shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 mx-auto"
-                  >
-                    <Zap size={16} /> Start Scanner
-                  </button>
+                  <label className="px-6 py-3 bg-primary hover:bg-primary-600 text-white font-semibold rounded-btn shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 mx-auto cursor-pointer w-fit">
+                    <Zap size={16} /> Upload QR Image
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
                 </div>
-              ) : (
-                <div id="reader" className="w-full h-full" />
               )}
+              {/* Hidden reader div required by Html5Qrcode library */}
+              <div id="reader" style={{ display: 'none' }}></div>
 
               {/* Scanning overlay */}
               {isScanning && (
@@ -329,7 +326,7 @@ const GuardScanner = () => {
 
                 {/* Reset Button */}
                 <button
-                  onClick={() => { setScanResult(null); startScanner(); }}
+                  onClick={() => { resetScanner(); }}
                   className="w-full py-3 border border-border rounded-btn text-sm font-semibold text-txt-secondary hover:bg-surface transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <RotateCcw size={16} /> Scan Next

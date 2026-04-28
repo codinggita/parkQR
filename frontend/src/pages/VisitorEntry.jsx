@@ -62,7 +62,7 @@ const VisitorEntry = () => {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/visitors/add', {
+      const res = await fetch('http://localhost:5000/api/visitors/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,31 +71,17 @@ const VisitorEntry = () => {
         body: JSON.stringify({
           name: form.name.trim(),
           phone: form.phone.trim(),
-          vehicleNumber: form.vehicle.trim().toUpperCase(),
+          vehicle: form.vehicle.trim().toUpperCase(),
           flatNumber: form.flat.trim().toUpperCase(),
           duration: parseInt(form.duration),
-          priority: form.priority ? 'vip' : 'normal',
+          isPriority: form.priority,
         })
       });
 
       const data = await res.json();
 
       if (data.success) {
-        const qrPayload = JSON.stringify({
-          id: data.data?._id || data.data?.id,
-          name: form.name,
-          vehicle: form.vehicle.toUpperCase(),
-          flat: form.flat.toUpperCase(),
-          ts: Date.now()
-        });
-
-        const qrImg = await QRCode.toDataURL(qrPayload, {
-          width: 280,
-          margin: 2,
-          color: { dark: '#0F172A', light: '#FFFFFF' }
-        });
-
-        setQrImage(qrImg);
+        setQrImage(data.qrCode);
         setQrData({
           name: form.name,
           vehicle: form.vehicle.toUpperCase(),
