@@ -22,7 +22,10 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  const [initialLoading, setInitialLoading] = useState(true);
+  // If user exists in cache, we don't need to show the initial loader
+  const [initialLoading, setInitialLoading] = useState(() => {
+    return !localStorage.getItem('parksmart_user');
+  });
   const [authActionLoading, setAuthActionLoading] = useState(false);
 
   /**
@@ -31,15 +34,16 @@ export const AuthProvider = ({ children }) => {
   const clearSession = useCallback(() => {
     localStorage.removeItem('parksmart_token');
     localStorage.removeItem('parksmart_user');
+    localStorage.removeItem('parkora_active_tab');
     setUser(null);
   }, []);
 
   // Sync Firebase Auth State
   useEffect(() => {
-    // 1. Safety Timeout: Force loading to false after 3s to prevent hangs
+    // Safety timeout: stop loading if Firebase takes too long (reduced to 1s)
     const timeoutId = setTimeout(() => {
       setInitialLoading(false);
-    }, 3000);
+    }, 1000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {

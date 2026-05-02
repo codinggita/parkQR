@@ -47,7 +47,7 @@ const LoginPage = () => {
     
     const skeletonTimer = setTimeout(() => {
       if (!error) setShowSkeleton(true);
-    }, 6000);
+    }, 1000);
 
     try {
       let result;

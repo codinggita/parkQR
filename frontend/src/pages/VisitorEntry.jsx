@@ -2,10 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   UserPlus, Phone, Car, Home, Clock, Star, Send,
-  QrCode, Printer, Timer, CheckCircle, AlertCircle, X
+  QrCode, Printer, Timer, CheckCircle, AlertCircle, X, ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 
 const VisitorEntry = () => {
@@ -18,9 +17,7 @@ const VisitorEntry = () => {
   const [qrData, setQrData] = useState(null);
   const [qrImage, setQrImage] = useState('');
   const [countdown, setCountdown] = useState(null);
-  const canvasRef = useRef(null);
 
-  // Countdown timer
   useEffect(() => {
     if (!countdown) return;
     const interval = setInterval(() => {
@@ -43,10 +40,10 @@ const VisitorEntry = () => {
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.phone.trim() || !/^\d{10}$/.test(form.phone.trim())) errs.phone = 'Valid 10-digit phone required';
-    if (!form.vehicle.trim()) errs.vehicle = 'Vehicle number is required';
-    if (!form.flat.trim()) errs.flat = 'Flat number is required';
+    if (!form.name.trim()) errs.name = 'Full name is required';
+    if (!form.phone.trim() || !/^\d{10}$/.test(form.phone.trim())) errs.phone = 'Valid 10-digit number required';
+    if (!form.vehicle.trim()) errs.vehicle = 'Vehicle number required';
+    if (!form.flat.trim()) errs.flat = 'Flat is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -90,12 +87,12 @@ const VisitorEntry = () => {
           priority: form.priority,
         });
         setCountdown(parseInt(form.duration) * 60);
-        toast.success('Visitor registered successfully!');
+        toast.success('Visitor pass generated!');
       } else {
         toast.error(data.message || 'Registration failed');
       }
     } catch (err) {
-      toast.error('Network error. Is the backend running?');
+      toast.error('Backend connection failed');
     } finally {
       setLoading(false);
     }
@@ -105,14 +102,12 @@ const VisitorEntry = () => {
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
-        <head><title>Visitor Pass - ${qrData?.name}</title></head>
+        <head><title>Pass - ${qrData?.name}</title></head>
         <body style="font-family:Inter,sans-serif;text-align:center;padding:40px">
-          <h2>ParkSmart AI - Visitor Pass</h2>
+          <h2>PARKORA AI PASS</h2>
           <img src="${qrImage}" style="width:200px;height:200px;margin:20px"/>
           <p><strong>${qrData?.name}</strong></p>
           <p>Vehicle: ${qrData?.vehicle}</p>
-          <p>Flat: ${qrData?.flat}</p>
-          <p>Duration: ${qrData?.duration} min</p>
         </body>
       </html>
     `);
@@ -129,191 +124,168 @@ const VisitorEntry = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-12">
+      {/* Background Glows */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[var(--accent)] opacity-[0.03] blur-[150px] pointer-events-none" />
+
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-txt-primary">Visitor Entry</h1>
-        <p className="text-sm text-txt-secondary mt-0.5">Register visitors and generate QR passes</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black text-[var(--txt-primary)] tracking-tighter uppercase mb-2">
+            VISITOR<span className="text-[var(--accent)]"> ENTRY</span>
+          </h1>
+          <p className="text-[10px] font-bold text-[var(--txt-secondary)] uppercase tracking-[0.4em] opacity-60">
+            Neural Registration System 2.0
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Form - 60% */}
-        <div className="lg:col-span-3 bg-white rounded-card border border-border shadow-card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-10 w-10 bg-primary-50 rounded-card flex items-center justify-center">
-              <UserPlus size={20} className="text-primary" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-txt-primary">Registration Form</h2>
-              <p className="text-xs text-txt-muted">Fill in visitor details below</p>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Registration Form */}
+        <div className="lg:col-span-7 bg-[var(--surface)] rounded-[32px] border border-[var(--border)] p-8 shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)] opacity-20" />
+           
+           <div className="flex items-center gap-4 mb-8">
+             <div className="h-12 w-12 bg-[var(--bg)] rounded-2xl flex items-center justify-center border border-[var(--border)] accent-glow">
+                <UserPlus size={20} className="text-[var(--accent)]" />
+             </div>
+             <div>
+               <h2 className="text-lg font-black text-[var(--txt-primary)] uppercase tracking-tight">Visitor Details</h2>
+               <p className="text-xs text-[var(--txt-secondary)] opacity-60">Complete the authentication profile</p>
+             </div>
+           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                icon={UserPlus} label="Full Name" placeholder="Rahul Sharma"
-                value={form.name} onChange={(v) => handleChange('name', v)} error={errors.name}
-              />
-              <FormField
-                icon={Phone} label="Phone Number" placeholder="9876543210" type="tel"
-                value={form.phone} onChange={(v) => handleChange('phone', v)} error={errors.phone}
-              />
-              <FormField
-                icon={Car} label="Vehicle Number" placeholder="MH 02 AB 1234"
-                value={form.vehicle} onChange={(v) => handleChange('vehicle', v)} error={errors.vehicle}
-              />
-              <FormField
-                icon={Home} label="Flat Number" placeholder="A-401"
-                value={form.flat} onChange={(v) => handleChange('flat', v)} error={errors.flat}
-              />
-            </div>
-
-            {/* Duration */}
-            <div>
-              <label className="block text-sm font-medium text-txt-secondary mb-1.5">
-                <Clock size={14} className="inline mr-1.5" />
-                Expected Duration
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {['30', '60', '120', '240'].map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => handleChange('duration', d)}
-                    className={`py-2 rounded-btn text-sm font-medium border transition-all duration-200
-                      ${form.duration === d
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-white text-txt-secondary border-border hover:border-primary-300 hover:text-primary'
-                      }`}
-                  >
-                    {d >= 60 ? `${d / 60}h` : `${d}m`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* VIP Toggle */}
-            <div className="flex items-center justify-between bg-surface rounded-btn p-4 border border-border">
-              <div className="flex items-center gap-3">
-                <Star size={18} className={form.priority ? 'text-warning fill-warning' : 'text-txt-muted'} />
-                <div>
-                  <p className="text-sm font-medium text-txt-primary">VIP Priority</p>
-                  <p className="text-xs text-txt-muted">Assign a premium parking spot</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleChange('priority', !form.priority)}
-                className={`w-11 h-6 rounded-full transition-colors duration-200 relative
-                  ${form.priority ? 'bg-primary' : 'bg-gray-200'}`}
-              >
-                <div className={`absolute top-0.5 h-5 w-5 bg-white rounded-full shadow-sm transition-transform duration-200
-                  ${form.priority ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
+           <form onSubmit={handleSubmit} className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField 
+                  icon={UserPlus} label="FULL NAME" placeholder="e.g. John Doe"
+                  value={form.name} onChange={(v) => handleChange('name', v)} error={errors.name}
                 />
-              </button>
-            </div>
+                <FormField 
+                  icon={Phone} label="PHONE NUMBER" placeholder="e.g. 9876543210" type="tel"
+                  value={form.phone} onChange={(v) => handleChange('phone', v)} error={errors.phone}
+                />
+                <FormField 
+                  icon={Car} label="VEHICLE NUMBER" placeholder="e.g. MH 02 AB 1234"
+                  value={form.vehicle} onChange={(v) => handleChange('vehicle', v)} error={errors.vehicle}
+                />
+                <FormField 
+                  icon={Home} label="TARGET UNIT" placeholder="e.g. A-401"
+                  value={form.flat} onChange={(v) => handleChange('flat', v)} error={errors.flat}
+                />
+             </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 bg-primary hover:bg-primary-600 text-white font-semibold rounded-btn transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-60"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Send size={16} />
-                  Register & Generate QR
-                </>
-              )}
-            </button>
-          </form>
+             {/* Duration Selector */}
+             <div className="space-y-4">
+                <label className="text-[10px] font-black text-[var(--txt-secondary)] uppercase tracking-widest block">
+                  Parking Duration
+                </label>
+                <div className="grid grid-cols-4 gap-4">
+                  {['30', '60', '120', '240'].map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => handleChange('duration', d)}
+                      className={`h-14 rounded-2xl text-xs font-black uppercase tracking-widest transition-all
+                        ${form.duration === d 
+                          ? 'bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/20' 
+                          : 'bg-[var(--bg)] text-[var(--txt-secondary)] border border-[var(--border)] hover:border-[var(--accent)]/30'
+                        }`}
+                    >
+                      {d >= 60 ? `${d / 60}H` : `${d}M`}
+                    </button>
+                  ))}
+                </div>
+             </div>
+
+             {/* VIP Priority Toggle */}
+             <div className="bg-[var(--bg)] rounded-[24px] p-6 border border-[var(--border)] flex items-center justify-between group/vip cursor-pointer hover:border-[var(--accent)]/30 transition-all" onClick={() => handleChange('priority', !form.priority)}>
+                <div className="flex items-center gap-4">
+                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${form.priority ? 'bg-[var(--accent)]/20' : 'bg-[var(--surface)] opacity-40'}`}>
+                      <Star size={18} className={form.priority ? 'text-[var(--accent)] fill-[var(--accent)]' : 'text-[var(--txt-secondary)]'} />
+                   </div>
+                   <div>
+                     <p className="text-sm font-black text-[var(--txt-primary)] uppercase tracking-tight">VIP Priority Pass</p>
+                     <p className="text-[10px] text-[var(--txt-secondary)] opacity-60">Reserved premium parking bay</p>
+                   </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full p-1 transition-all ${form.priority ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}>
+                   <div className={`h-4 w-4 bg-white rounded-full transition-all ${form.priority ? 'translate-x-6' : 'translate-x-0'}`} />
+                </div>
+             </div>
+
+             <button
+               type="submit"
+               disabled={loading}
+               className="w-full h-16 bg-slate-900 text-white dark:bg-white dark:text-black rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 mt-4"
+             >
+               {loading ? (
+                 <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+               ) : (
+                 <>
+                   <ShieldCheck size={18} />
+                   Authorize Entry
+                 </>
+               )}
+             </button>
+           </form>
         </div>
 
-        {/* QR Preview - 40% */}
-        <div className="lg:col-span-2">
-          <AnimatePresence mode="wait">
-            {qrData ? (
-              <motion.div
-                key="qr-result"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-card border border-border shadow-card p-6 text-center sticky top-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={18} className="text-success" />
-                    <span className="text-sm font-semibold text-success">Pass Generated</span>
+        {/* QR Preview / Result */}
+        <div className="lg:col-span-5 sticky top-8">
+           <AnimatePresence mode="wait">
+             {qrData ? (
+               <motion.div
+                 key="result"
+                 initial={{ opacity: 0, x: 20 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 className="bg-[var(--surface)] rounded-[32px] border border-[var(--border)] p-8 shadow-2xl text-center relative"
+               >
+                  <div className="absolute -top-3 -right-3 h-10 w-10 bg-success text-white rounded-full flex items-center justify-center shadow-lg">
+                     <CheckCircle size={20} />
                   </div>
-                  <button onClick={resetForm} className="p-1.5 hover:bg-surface rounded-btn transition-colors">
-                    <X size={16} className="text-txt-muted" />
-                  </button>
-                </div>
 
-                {/* QR Code */}
-                <div className="bg-surface rounded-card p-6 mb-4">
-                  <img src={qrImage} alt="QR Code" className="w-56 h-56 mx-auto" />
-                </div>
+                  <h3 className="text-xs font-black text-[var(--txt-secondary)] uppercase tracking-[0.3em] mb-8">Access Pass Generated</h3>
+                  
+                  <div className="bg-white p-6 rounded-[24px] mb-8 inline-block shadow-inner">
+                     <img src={qrImage} alt="QR Code" className="w-48 h-48" />
+                  </div>
 
-                {/* Visitor Info */}
-                <div className="space-y-2.5 text-left mb-4">
-                  <InfoRow label="Visitor" value={qrData.name} />
-                  <InfoRow label="Vehicle" value={qrData.vehicle} highlight />
-                  <InfoRow label="Flat" value={qrData.flat} />
-                  <InfoRow label="Duration" value={`${qrData.duration} min`} />
-                  {qrData.priority && (
-                    <div className="flex items-center gap-1.5 text-warning">
-                      <Star size={14} className="fill-warning" />
-                      <span className="text-xs font-semibold">VIP Priority Pass</span>
+                  <div className="space-y-4 text-left mb-8">
+                     <ResultRow label="VISITOR" value={qrData.name} />
+                     <ResultRow label="VEHICLE" value={qrData.vehicle} highlight />
+                     <ResultRow label="UNIT" value={qrData.flat} />
+                     <ResultRow label="VALIDITY" value={`${qrData.duration} MINUTES`} />
+                  </div>
+
+                  {countdown !== null && (
+                    <div className="bg-[var(--bg)] rounded-[20px] p-4 border border-[var(--border)] flex items-center justify-between mb-8">
+                       <p className="text-[10px] font-black text-[var(--txt-secondary)] uppercase tracking-widest">Expires In</p>
+                       <span className={`text-xl font-mono font-black ${countdown < 300 ? 'text-danger' : 'text-[var(--accent)]'}`}>
+                         {formatTime(countdown)}
+                       </span>
                     </div>
                   )}
-                </div>
 
-                {/* Countdown */}
-                {countdown !== null && (
-                  <div className="bg-surface rounded-btn p-3 mb-4 flex items-center justify-center gap-2">
-                    <Timer size={16} className={countdown < 300 ? 'text-danger' : 'text-primary'} />
-                    <span className={`text-lg font-bold font-mono ${countdown < 300 ? 'text-danger' : 'text-primary'}`}>
-                      {formatTime(countdown)}
-                    </span>
-                    <span className="text-xs text-txt-muted ml-1">remaining</span>
+                  <div className="grid grid-cols-2 gap-4">
+                     <button onClick={handlePrint} className="h-14 bg-[var(--bg)] border border-[var(--border)] rounded-[20px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[var(--surface)] transition-all">
+                        <Printer size={16} /> Print Pass
+                     </button>
+                     <button onClick={resetForm} className="h-14 bg-[var(--accent)] text-black rounded-[20px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-105 transition-all">
+                        <UserPlus size={16} /> New Entry
+                     </button>
                   </div>
-                )}
-
-                {/* Actions */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handlePrint}
-                    className="py-2.5 border border-border rounded-btn text-sm font-medium text-txt-secondary hover:bg-surface transition-all duration-200 flex items-center justify-center gap-2"
-                  >
-                    <Printer size={14} /> Print
-                  </button>
-                  <button
-                    onClick={resetForm}
-                    className="py-2.5 bg-primary text-white rounded-btn text-sm font-medium hover:bg-primary-600 transition-all duration-200 flex items-center justify-center gap-2"
-                  >
-                    <UserPlus size={14} /> New Entry
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="qr-empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white rounded-card border-2 border-dashed border-border p-10 text-center sticky top-6"
-              >
-                <div className="h-16 w-16 bg-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <QrCode size={28} className="text-txt-muted" />
-                </div>
-                <h3 className="font-semibold text-txt-primary mb-1">QR Pass Preview</h3>
-                <p className="text-sm text-txt-muted">Fill the form and submit to generate a visitor pass with QR code</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+               </motion.div>
+             ) : (
+               <div className="bg-[var(--surface)] rounded-[32px] border-2 border-dashed border-[var(--border)] p-12 text-center opacity-40">
+                  <div className="h-20 w-20 bg-[var(--bg)] rounded-[24px] flex items-center justify-center mx-auto mb-6">
+                     <QrCode size={32} className="text-[var(--txt-secondary)]" />
+                  </div>
+                  <h3 className="text-sm font-black text-[var(--txt-primary)] uppercase tracking-widest mb-2">System Waiting</h3>
+                  <p className="text-xs text-[var(--txt-secondary)] max-w-[200px] mx-auto leading-relaxed">Fill the authentication profile to generate access pass</p>
+               </div>
+             )}
+           </AnimatePresence>
         </div>
       </div>
     </div>
@@ -321,31 +293,27 @@ const VisitorEntry = () => {
 };
 
 const FormField = ({ icon: Icon, label, placeholder, value, onChange, error, type = 'text' }) => (
-  <div>
-    <label className="block text-sm font-medium text-txt-secondary mb-1.5">{label}</label>
+  <div className="space-y-2">
+    <label className="text-[10px] font-black text-[var(--txt-secondary)] uppercase tracking-widest ml-1">{label}</label>
     <div className="relative">
-      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-txt-muted" size={16} />
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--txt-secondary)] opacity-40" size={16} />
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full h-11 bg-surface border rounded-btn pl-10 pr-4 text-sm text-txt-primary placeholder:text-txt-muted outline-none transition-all duration-200
-          ${error ? 'border-danger focus:ring-2 focus:ring-danger/20' : 'border-border focus:ring-2 focus:ring-primary-200 focus:border-primary'}`}
+        className={`w-full h-14 bg-[var(--bg)] border rounded-[20px] pl-12 pr-4 text-sm text-[var(--txt-primary)] placeholder:opacity-30 outline-none transition-all
+          ${error ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-[var(--border)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/10'}`}
       />
     </div>
-    {error && (
-      <p className="text-xs text-danger mt-1 flex items-center gap-1">
-        <AlertCircle size={12} /> {error}
-      </p>
-    )}
+    {error && <p className="text-[9px] font-bold text-danger uppercase tracking-widest ml-1">{error}</p>}
   </div>
 );
 
-const InfoRow = ({ label, value, highlight }) => (
-  <div className="flex justify-between items-center py-1.5 border-b border-border last:border-0">
-    <span className="text-xs text-txt-muted font-medium">{label}</span>
-    <span className={`text-sm font-semibold ${highlight ? 'text-primary font-mono' : 'text-txt-primary'}`}>{value}</span>
+const ResultRow = ({ label, value, highlight }) => (
+  <div className="flex justify-between items-center py-2 border-b border-[var(--border)] last:border-0">
+    <span className="text-[9px] font-black text-[var(--txt-secondary)] uppercase tracking-widest opacity-60">{label}</span>
+    <span className={`text-sm font-black uppercase tracking-tight ${highlight ? 'text-[var(--accent)]' : 'text-[var(--txt-primary)]'}`}>{value}</span>
   </div>
 );
 
