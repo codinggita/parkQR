@@ -15,11 +15,11 @@ const AppLayout = ({ children, activeTab, setActiveTab, notificationCount = 3 })
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'guard'] },
-    { id: 'booking', label: 'Parking Map', icon: ParkingSquare, roles: ['admin', 'guard'] },
+    { id: 'booking', label: 'Parking Map', icon: ParkingSquare, roles: ['admin', 'guard', 'resident'] },
     { id: 'visitors', label: 'Visitors', icon: UserPlus, roles: ['admin', 'guard'] },
     { id: 'scanner', label: 'Scanner', icon: ScanLine, roles: ['admin', 'guard'] },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin'] },
-    { id: 'residents', label: 'Residents', icon: Users, roles: ['admin'] },
+    { id: 'residents', label: 'My Dashboard', icon: Users, roles: ['admin', 'resident'] },
   ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user?.role));
@@ -93,7 +93,7 @@ const AppLayout = ({ children, activeTab, setActiveTab, notificationCount = 3 })
             </div>
 
             <nav className="hidden lg:flex items-center gap-8 h-full">
-              {filteredNav.slice(0, 4).map((item) => (
+              {filteredNav.map((item) => (
                 <button 
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}

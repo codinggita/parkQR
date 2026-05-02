@@ -19,15 +19,25 @@ const AIChatbot = lazy(() => import('./components/AIChatbot'));
 
 const AppContent = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Persist active tab across refreshes
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem('parkora_active_tab');
+    if (saved) return saved;
+    // Default based on role
+    return user?.role === 'resident' ? 'residents' : 'dashboard';
+  });
+
+  // Update localStorage when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('parkora_active_tab', tab);
+  };
 
   // Initial Startup Loader (Prevents Flicker)
   if (loading) return <NeuralLoader />;
 
-  // If we are logged in but dashboard isn't showing, it might be a routing issue
-  // Let's ensure activeTab defaults to dashboard if none matches
-  const currentTab = activeTab || 'dashboard';
-
+  // Only show login if explicitly not authenticated
   if (!user) return (
     <Suspense fallback={<NeuralLoader />}>
       <LoginPage />
@@ -35,7 +45,7 @@ const AppContent = () => {
   );
 
   const renderPage = () => {
-    switch (currentTab) {
+    switch (activeTab) {
       case 'dashboard': return <AdminPanel />;
       case 'booking': return <BookingPage />;
       case 'visitors': return <VisitorEntry />;
@@ -49,7 +59,7 @@ const AppContent = () => {
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange}>
         {renderPage()}
       </AppLayout>
       <AIChatbot />
